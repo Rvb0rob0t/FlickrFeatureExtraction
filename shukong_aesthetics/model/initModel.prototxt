@@ -1,0 +1,1339 @@
+name: "ftRankLoss"
+input: "imgLow"
+input_dim: 1
+input_dim: 3
+input_dim: 227
+input_dim: 227
+
+
+#### branch-A: shared low-level layers #####
+layer {
+  name: "conv1"
+  type: "Convolution"
+  bottom: "imgLow"
+  top: "conv1"
+  param {
+    name: "conv1_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "conv1_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 96
+    kernel_size: 11
+    stride: 4
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu1"
+  type: "ReLU"
+  bottom: "conv1"
+  top: "conv1"
+}
+
+layer {
+  name: "pool1"
+  type: "Pooling"
+  bottom: "conv1"
+  top: "pool1"
+  pooling_param {
+    pool: MAX
+    kernel_size: 3
+    stride: 2
+  }
+}
+
+layer {
+  name: "norm1"
+  type: "LRN"
+  bottom: "pool1"
+  top: "norm1"
+  lrn_param {
+    local_size: 5
+    alpha: 0.0001
+    beta: 0.75
+  }
+}
+
+
+layer {
+  name: "conv2"
+  type: "Convolution"
+  bottom: "norm1"
+  top: "conv2"
+  param {
+    name: "conv2_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "conv2_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 256
+    pad: 2
+    kernel_size: 5
+    group: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0.1
+    }
+  }
+}
+
+layer {
+  name: "relu2"
+  type: "ReLU"
+  bottom: "conv2"
+  top: "conv2"
+}
+
+layer {
+  name: "pool2"
+  type: "Pooling"
+  bottom: "conv2"
+  top: "pool2"
+  pooling_param {
+    pool: MAX
+    kernel_size: 3
+    stride: 2
+  }
+}
+
+layer {
+  name: "norm2"
+  type: "LRN"
+  bottom: "pool2"
+  top: "norm2"
+  lrn_param {
+    local_size: 5
+    alpha: 0.0001
+    beta: 0.75
+  }
+}
+
+layer {
+  name: "conv3"
+  type: "Convolution"
+  bottom: "norm2"
+  top: "conv3"
+  param {
+    name: "conv3_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "conv3_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 384
+    pad: 1
+    kernel_size: 3
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu3"
+  type: "ReLU"
+  bottom: "conv3"
+  top: "conv3"
+}
+
+layer {
+  name: "conv4"
+  type: "Convolution"
+  bottom: "conv3"
+  top: "conv4"
+  param {
+    name: "conv4_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "conv4_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 384
+    pad: 1
+    kernel_size: 3
+    group: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0.1
+    }
+  }
+}
+
+layer {
+  name: "relu4"
+  type: "ReLU"
+  bottom: "conv4"
+  top: "conv4"
+}
+
+layer {
+  name: "conv5"
+  type: "Convolution"
+  bottom: "conv4"
+  top: "conv5"
+  param {
+    name: "conv5_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "conv5_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  convolution_param {
+    num_output: 256
+    pad: 1
+    kernel_size: 3
+    group: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0.1
+    }
+  }
+}
+
+layer {
+  name: "relu5"
+  type: "ReLU"
+  bottom: "conv5"
+  top: "conv5"
+}
+
+layer {
+  name: "pool5"
+  type: "Pooling"
+  bottom: "conv5"
+  top: "pool5"
+  pooling_param {
+    pool: MAX
+    kernel_size: 3
+    stride: 2
+  }
+}
+
+layer {
+  name: "fc6"
+  type: "InnerProduct"
+  bottom: "pool5"
+  top: "fc6"
+  param {
+    name: "fc6_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc6_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 4096
+    weight_filler {
+      type: "gaussian"
+      std: 0.005
+    }
+    bias_filler {
+      type: "constant"
+      value: 0.1
+    }
+  }
+}
+
+layer {
+  name: "relu6"
+  type: "ReLU"
+  bottom: "fc6"
+  top: "fc6"
+}
+
+layer {
+  name: "drop6"
+  type: "Dropout"
+  bottom: "fc6"
+  top: "fc6"
+  dropout_param {
+    dropout_ratio: 0.5
+  }
+}
+
+layer {
+  name: "fc7"
+  type: "InnerProduct"
+  bottom: "fc6"
+  top: "fc7"
+  param {
+    name: "fc7_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc7_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 4096
+    weight_filler {
+      type: "gaussian"
+      std: 0.005
+    }
+    bias_filler {
+      type: "constant"
+      value: 0.1
+    }
+  }
+}
+
+layer {
+  name: "relu7"
+  type: "ReLU"
+  bottom: "fc7"
+  top: "fc7"
+}
+
+layer {
+  name: "drop7"
+  type: "Dropout"
+  bottom: "fc7"
+  top: "fc7"
+  dropout_param {
+    dropout_ratio: 0.5
+  }
+}
+
+
+
+
+####### functionality layers for score regression and attributes  ###########
+layer {
+  name: "fc8new"
+  type: "InnerProduct"
+  bottom: "fc7"
+  top: "fc8new"
+  param {
+    name: "fc8_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc8_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 512
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu8new"
+  type: "ReLU"
+  bottom: "fc8new"
+  top: "fc8new"
+}
+
+layer {
+  name: "drop8new"
+  type: "Dropout"
+  bottom: "fc8new"
+  top: "fc8new"
+  dropout_param {
+    dropout_ratio: 0.5
+  }
+}
+
+#layer {
+#  name: "fc9new"
+#  type: "InnerProduct"
+#  bottom: "fc8new"
+#  top: "fc9new"
+#  param {
+#    name: "fc9_w"
+#    lr_mult: 1
+#    decay_mult: 1
+#  }
+#  param {
+#    name: "fc9_b"
+#    lr_mult: 2
+#    decay_mult: 0
+#  }
+#  inner_product_param {
+#    num_output: 1
+#    weight_filler {
+#      type: "gaussian"
+#      std: 0.01
+#    }
+#    bias_filler {
+#      type: "constant"
+#      value: 0
+#    }
+#  }
+#}
+
+
+
+############# BalancingElement
+layer {
+  name: "fc8_BalancingElement"
+  type: "InnerProduct"
+  bottom: "fc7"
+  top: "fc8_BalancingElement"
+  param {
+    name: "fc8_BalancingElement_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc8_BalancingElement_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 256
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu8_BalancingElement"
+  type: "ReLU"
+  bottom: "fc8_BalancingElement"
+  top: "fc8_BalancingElement"
+}
+
+layer {
+  name: "drop8_BalancingElement"
+  type: "Dropout"
+  bottom: "fc8_BalancingElement"
+  top: "fc8_BalancingElement"
+  dropout_param {
+    dropout_ratio: 0.5
+  }
+}
+
+layer {
+  name: "fc9_BalancingElement"
+  type: "InnerProduct"
+  bottom: "fc8_BalancingElement"
+  top: "fc9_BalancingElement"
+  param {
+    name: "fc9_BalancingElement_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc9_BalancingElement_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+
+############# ColorHarmony
+layer {
+  name: "fc8_ColorHarmony"
+  type: "InnerProduct"
+  bottom: "fc7"
+  top: "fc8_ColorHarmony"
+  param {
+    name: "fc8_ColorHarmony_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc8_ColorHarmony_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 256
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu8_ColorHarmony"
+  type: "ReLU"
+  bottom: "fc8_ColorHarmony"
+  top: "fc8_ColorHarmony"
+}
+
+layer {
+  name: "drop8_ColorHarmony"
+  type: "Dropout"
+  bottom: "fc8_ColorHarmony"
+  top: "fc8_ColorHarmony"
+  dropout_param {
+    dropout_ratio: 0.5
+  }
+}
+
+layer {
+  name: "fc9_ColorHarmony"
+  type: "InnerProduct"
+  bottom: "fc8_ColorHarmony"
+  top: "fc9_ColorHarmony"
+  param {
+    name: "fc9_ColorHarmony_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc9_ColorHarmony_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+############# Content
+layer {
+  name: "fc8_Content"
+  type: "InnerProduct"
+  bottom: "fc7"
+  top: "fc8_Content"
+  param {
+    name: "fc8_Content_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc8_Content_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 256
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu8_Content"
+  type: "ReLU"
+  bottom: "fc8_Content"
+  top: "fc8_Content"
+}
+
+layer {
+  name: "drop8_Content"
+  type: "Dropout"
+  bottom: "fc8_Content"
+  top: "fc8_Content"
+  dropout_param {
+    dropout_ratio: 0.5
+  }
+}
+
+layer {
+  name: "fc9_Content"
+  type: "InnerProduct"
+  bottom: "fc8_Content"
+  top: "fc9_Content"
+  param {
+    name: "fc9_Content_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc9_Content_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+############# DoF
+layer {
+  name: "fc8_DoF"
+  type: "InnerProduct"
+  bottom: "fc7"
+  top: "fc8_DoF"
+  param {
+    name: "fc8_DoF_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc8_DoF_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 256
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu8_DoF"
+  type: "ReLU"
+  bottom: "fc8_DoF"
+  top: "fc8_DoF"
+}
+
+layer {
+  name: "drop8_DoF"
+  type: "Dropout"
+  bottom: "fc8_DoF"
+  top: "fc8_DoF"
+  dropout_param {
+    dropout_ratio: 0.5
+  }
+}
+
+layer {
+  name: "fc9_DoF"
+  type: "InnerProduct"
+  bottom: "fc8_DoF"
+  top: "fc9_DoF"
+  param {
+    name: "fc9_DoF_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc9_DoF_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+############# Light
+layer {
+  name: "fc8_Light"
+  type: "InnerProduct"
+  bottom: "fc7"
+  top: "fc8_Light"
+  param {
+    name: "fc8_Light_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc8_Light_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 256
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu8_Light"
+  type: "ReLU"
+  bottom: "fc8_Light"
+  top: "fc8_Light"
+}
+
+layer {
+  name: "drop8_Light"
+  type: "Dropout"
+  bottom: "fc8_Light"
+  top: "fc8_Light"
+  dropout_param {
+    dropout_ratio: 0.5
+  }
+}
+
+layer {
+  name: "fc9_Light"
+  type: "InnerProduct"
+  bottom: "fc8_Light"
+  top: "fc9_Light"
+  param {
+    name: "fc9_Light_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc9_Light_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+############# MotionBlur
+layer {
+  name: "fc8_MotionBlur"
+  type: "InnerProduct"
+  bottom: "fc7"
+  top: "fc8_MotionBlur"
+  param {
+    name: "fc8_MotionBlur_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc8_MotionBlur_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 256
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu8_MotionBlur"
+  type: "ReLU"
+  bottom: "fc8_MotionBlur"
+  top: "fc8_MotionBlur"
+}
+
+layer {
+  name: "drop8_MotionBlur"
+  type: "Dropout"
+  bottom: "fc8_MotionBlur"
+  top: "fc8_MotionBlur"
+  dropout_param {
+    dropout_ratio: 0.5
+  }
+}
+
+layer {
+  name: "fc9_MotionBlur"
+  type: "InnerProduct"
+  bottom: "fc8_MotionBlur"
+  top: "fc9_MotionBlur"
+  param {
+    name: "fc9_MotionBlur_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc9_MotionBlur_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+############# Object
+layer {
+  name: "fc8_Object"
+  type: "InnerProduct"
+  bottom: "fc7"
+  top: "fc8_Object"
+  param {
+    name: "fc8_Object_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc8_Object_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 256
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu8_Object"
+  type: "ReLU"
+  bottom: "fc8_Object"
+  top: "fc8_Object"
+}
+
+layer {
+  name: "drop8_Object"
+  type: "Dropout"
+  bottom: "fc8_Object"
+  top: "fc8_Object"
+  dropout_param {
+    dropout_ratio: 0.5
+  }
+}
+
+layer {
+  name: "fc9_Object"
+  type: "InnerProduct"
+  bottom: "fc8_Object"
+  top: "fc9_Object"
+  param {
+    name: "fc9_Object_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc9_Object_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+############# Repetition
+layer {
+  name: "fc8_Repetition"
+  type: "InnerProduct"
+  bottom: "fc7"
+  top: "fc8_Repetition"
+  param {
+    name: "fc8_Repetition_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc8_Repetition_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 256
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu8_Repetition"
+  type: "ReLU"
+  bottom: "fc8_Repetition"
+  top: "fc8_Repetition"
+}
+
+layer {
+  name: "drop8_Repetition"
+  type: "Dropout"
+  bottom: "fc8_Repetition"
+  top: "fc8_Repetition"
+  dropout_param {
+    dropout_ratio: 0.5
+  }
+}
+
+layer {
+  name: "fc9_Repetition"
+  type: "InnerProduct"
+  bottom: "fc8_Repetition"
+  top: "fc9_Repetition"
+  param {
+    name: "fc9_Repetition_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc9_Repetition_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+############# RuleOfThirds
+layer {
+  name: "fc8_RuleOfThirds"
+  type: "InnerProduct"
+  bottom: "fc7"
+  top: "fc8_RuleOfThirds"
+  param {
+    name: "fc8_RuleOfThirds_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc8_RuleOfThirds_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 256
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu8_RuleOfThirds"
+  type: "ReLU"
+  bottom: "fc8_RuleOfThirds"
+  top: "fc8_RuleOfThirds"
+}
+
+layer {
+  name: "drop8_RuleOfThirds"
+  type: "Dropout"
+  bottom: "fc8_RuleOfThirds"
+  top: "fc8_RuleOfThirds"
+  dropout_param {
+    dropout_ratio: 0.5
+  }
+}
+
+layer {
+  name: "fc9_RuleOfThirds"
+  type: "InnerProduct"
+  bottom: "fc8_RuleOfThirds"
+  top: "fc9_RuleOfThirds"
+  param {
+    name: "fc9_RuleOfThirds_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc9_RuleOfThirds_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+############# Symmetry
+layer {
+  name: "fc8_Symmetry"
+  type: "InnerProduct"
+  bottom: "fc7"
+  top: "fc8_Symmetry"
+  param {
+    name: "fc8_Symmetry_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc8_Symmetry_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 256
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu8_Symmetry"
+  type: "ReLU"
+  bottom: "fc8_Symmetry"
+  top: "fc8_Symmetry"
+}
+
+layer {
+  name: "drop8_Symmetry"
+  type: "Dropout"
+  bottom: "fc8_Symmetry"
+  top: "fc8_Symmetry"
+  dropout_param {
+    dropout_ratio: 0.5
+  }
+}
+
+layer {
+  name: "fc9_Symmetry"
+  type: "InnerProduct"
+  bottom: "fc8_Symmetry"
+  top: "fc9_Symmetry"
+  param {
+    name: "fc9_Symmetry_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc9_Symmetry_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+############# VividColor
+layer {
+  name: "fc8_VividColor"
+  type: "InnerProduct"
+  bottom: "fc7"
+  top: "fc8_VividColor"
+  param {
+    name: "fc8_VividColor_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc8_VividColor_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 256
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu8_VividColor"
+  type: "ReLU"
+  bottom: "fc8_VividColor"
+  top: "fc8_VividColor"
+}
+
+layer {
+  name: "drop8_VividColor"
+  type: "Dropout"
+  bottom: "fc8_VividColor"
+  top: "fc8_VividColor"
+  dropout_param {
+    dropout_ratio: 0.5
+  }
+}
+
+layer {
+  name: "fc9_VividColor"
+  type: "InnerProduct"
+  bottom: "fc8_VividColor"
+  top: "fc9_VividColor"
+  param {
+    name: "fc9_VividColor_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc9_VividColor_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+
+
+layer {
+  name: "Concat9"
+  bottom: "fc8new"
+  bottom: "fc8_BalancingElement"
+  bottom: "fc8_ColorHarmony"
+  bottom: "fc8_Content"
+  bottom: "fc8_DoF"
+  bottom: "fc8_Light"
+  bottom: "fc8_MotionBlur"
+  bottom: "fc8_Object"
+  bottom: "fc8_Repetition"
+  bottom: "fc8_RuleOfThirds"
+  bottom: "fc8_Symmetry"
+  bottom: "fc8_VividColor"
+  top: "Concat9"
+  type: "Concat"
+  concat_param {
+    axis: 1
+  }
+}
+
+layer {
+  name: "fc10_merge"
+  type: "InnerProduct"
+  bottom: "Concat9"
+  top: "fc10_merge"
+  param {
+    name: "fc10_merge_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc10_merge_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 128
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "relu10_merge"
+  type: "ReLU"
+  bottom: "fc10_merge"
+  top: "fc10_merge"
+}
+
+layer {
+  name: "drop10_merge"
+  type: "Dropout"
+  bottom: "fc10_merge"
+  top: "fc10_merge"
+  dropout_param {
+    dropout_ratio: 0.5
+  }
+}
+
+layer {
+  name: "fc11_score"
+  type: "InnerProduct"
+  bottom: "fc10_merge"
+  top: "fc11_score"
+  param {
+    name: "fc11_score_w"
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    name: "fc11_score_b"
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+
