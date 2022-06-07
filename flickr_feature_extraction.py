@@ -369,22 +369,23 @@ class FlickrFeatureExtraction:
             self.logger.debug(f"Backup for photo {photo_id} features found")
             self.tracker.increment('photos_cached')
         else:
+            # Persist features from Flickr
+            photo_features = self._insistent_call(
+                self.get_basic_photo_features, photo_id)
+            photo_features['width_o'] = photo.get('width_o')
+            photo_features['height_o'] = photo.get('height_o')
+
             image_path = os.path.join(
                 photo_features_dir, photo_id + '.' + self.image_format)
             _, img = self.download_photo(photo)
             if img is None:
                 return False
             img = self.process_image(img)
-            img.save(image_path)
-            self.logger.debug(f"Photo {photo_id} downloaded to {image_path}")
-
-            photo_features = self._insistent_call(
-                self.get_basic_photo_features, photo_id)
-            photo_features['width_o'] = photo.get('width_o')
-            photo_features['height_o'] = photo.get('height_o')
             photo_features['width_downloaded'] = str(img.width)
             photo_features['height_downloaded'] = str(img.height)
-            img.close()  # TODO Do it cleaner
+            img.save(image_path)
+            self.logger.debug(f"Photo {photo_id} downloaded to {image_path}")
+            img.close()
 
             # Model scores
             self.logger.debug(f"Scoring photo {photo_id}...")
@@ -401,11 +402,17 @@ class FlickrFeatureExtraction:
 
             return True
 
-    def sample_user_photos(self, user_id, per_page=500, add=False):
-        left_requested = self.photo_sample_size
+    def sample_user_photos(
+        self,
+        user_id,
+        sample_size=None,
+        per_page=500,
+        add=False
+    ):
+        left_requested = sample_size or self.photo_sample_size
         if not add:
             photo_features_dir = os.path.join(
-            self.output_path, 'user_features', user_id, 'photo_features')
+                self.output_path, 'user_features', user_id, 'photo_features')
             already_sampled_photos = {
                 p.split('.')[0]
                 for p in os.listdir(photo_features_dir)
@@ -466,7 +473,7 @@ class FlickrFeatureExtraction:
                 except IndexError:
                     self.logger.warning(
                         (f"Photo {i+1} couldn't be selected. "
-                        f"Probably deleted or private by user {user_id}"))
+                         f"Probably deleted or private by user {user_id}"))
                 else:
                     if add or photo.get('id') not in already_sampled_photos:
                         left_requested -= 1
@@ -477,10 +484,14 @@ class FlickrFeatureExtraction:
                 self.logger.debug(
                     f"Reselecting photos to obtain the remaining {left_requested}...")
 
-
-    def full_persist_user_and_photo_sample_features(self, user_id,
-                                                    required_features=None,
-                                                    add=False):
+    def full_persist_user_and_photo_sample_features(
+        self, user_id,
+        sample_size=None,
+        required_features=None,
+        add=False
+    ):
+        """Persist on disk the features of a user and of a sample of its photos.
+        """
         user_features_dir = os.path.join(
             self.output_path, 'user_features', user_id)
         os.makedirs(user_features_dir, exist_ok=True)
@@ -510,12 +521,13 @@ class FlickrFeatureExtraction:
                     return False, False
 
         # Photos
-        #--------
+        # --------
         photo_features_dir = os.path.join(user_features_dir, 'photo_features')
         os.makedirs(photo_features_dir, exist_ok=True)
 
         # Sampling of the user photos
-        photos = self.sample_user_photos(user_id, add=add)
+        photos = self.sample_user_photos(
+            user_id, sample_size=sample_size or self.photo_sample_size, add=add)
 
         # Persist the features of every photo
         error_count_before = self.tracker.get_counter('error')

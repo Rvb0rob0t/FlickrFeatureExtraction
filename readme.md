@@ -1,34 +1,27 @@
 # Flickr Feature Extraction
-
 Toolkit for extracting features from Flickr through its API.
 
 ## Getting Started
 
 ### Prerequisites
-
 * tensorflow
 * keras
 * caffe
 
 ### Installation
-
 ```
 $ Install prerequisites
-$ Extract nima/compressed_models.tar.gz to nima/models
-$ Extract shukong_aesthetics/compressed_model.tar.gz to shukong_aesthetics/model
 $ Ready to extract features from Flickr
 ```
 
 ## Usage
-
 ```
 $ nohup python multithreaded.py > /dev/null 2> stderr.log &
 $ nohup python flickr_feature_extraction/assembly.py "final_features_14-02-2022/features/*/photo_features/*.json" -o final_features_14-02-2022/photo_features/ -s -3 > /dev/null 2> stderr.log &
 ```
 
 ## Additional Documentation and Acknowledgments
-
-The main article with the analysis of the data has been published in X. A preprint copy is available on Y.
+TODO
 
 ## Authors
 - Rubén Gaspar Marco
@@ -38,4 +31,3 @@ The main article with the analysis of the data has been published in X. A prepri
 
 ## Affiliations
 Authors are with the Department of Information and Communications Engineering, University of Murcia, Spain
-

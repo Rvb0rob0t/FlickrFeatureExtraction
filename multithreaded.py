@@ -23,7 +23,7 @@ from nima import nima
 from shukong_aesthetics import shukong_aesthetics
 
 
-AUX_METADATDA_PATH = '.metadata_updates.csv'
+AUX_METADATA_PATH = '.metadata_updates.csv'
 
 
 class ThreadSafeScorerAdapter():
@@ -182,7 +182,7 @@ if __name__ == "__main__":
                 is_completed = retvalues[0]
                 has_occupation = retvalues[1]
                 is_deleted = False
-            with open(AUX_METADATDA_PATH, 'a') as aux:
+            with open(AUX_METADATA_PATH, 'a') as aux:
                 row = ','.join(
                     map(str, [user_id, is_completed, has_occupation, is_deleted]))
                 aux.write(row + '\n')
@@ -192,10 +192,10 @@ if __name__ == "__main__":
         logging.info("Extraction finished!!!!!!!!!! Oleee!")
     finally:
         df_aux = pd.read_csv(
-            AUX_METADATDA_PATH,
+            AUX_METADATA_PATH,
             header=None,
             names=[df.index.name] + df.columns.tolist(),
             index_col='user')
         df.loc[df_aux.index] = df_aux
         df.to_csv(input_path)
-        os.remove(AUX_METADATDA_PATH)
+        os.remove(AUX_METADATA_PATH)
