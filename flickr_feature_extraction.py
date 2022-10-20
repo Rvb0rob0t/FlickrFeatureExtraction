@@ -4,6 +4,7 @@
 import argparse
 import configparser
 import csv
+import io
 import json
 import logging
 import logging.config
@@ -11,9 +12,7 @@ import logging.handlers
 import math
 import os
 import random
-import time
 import webbrowser
-from io import BytesIO
 
 import dotenv
 import flickrapi
@@ -35,6 +34,8 @@ _MAX_FAVORITES_PER_PAGE = 50
 # for any given search query. If this is an issue, we recommend trying a more
 # specific query. https://www.flickr.com/services/api/flickr.photos.search.htm
 _MAX_N_RESULTS = 4000
+
+PIL_INTERPOLATION_METHOD = Image.CUBIC
 
 
 def _sample_or_get_all(population, n):
@@ -175,7 +176,7 @@ class FlickrFeatureExtraction:
                 else:
                     raise
             else:
-                img = Image.open(BytesIO(response.content))
+                img = Image.open(io.BytesIO(response.content))
                 img.load()
                 return img
 
@@ -187,26 +188,22 @@ class FlickrFeatureExtraction:
         url = None
         if size_type is not None and license in self.licenses_allowed:
             url = photo.get('url_' + size_type)
-            try:
-                image = self._load_image(url, insistent=insistent)
-            except:
-                raise
-            else:
-                self.tracker.increment('photos_downloaded')
+            image = self._load_image(url, insistent=insistent)
+            self.tracker.increment('photos_downloaded')
         else:
             self.tracker.increment('photos_rejected')
 
         return url, image
 
-    def process_image(self, image):
+    def process_image(self, img, target_size=None):
         # Convert to full color (no grayscale, no transparent)
-        if image.mode not in ('RGB'):
+        if img.mode != 'RGB':
+            img = img.convert('RGB')
             self.logger.debug(f"Not RGB converted to RGB")
-            rgbimg = Image.new('RGB', image.size)
-            rgbimg.paste(image)
-            image = rgbimg
-
-        return image
+        # Resize if necessary
+        if target_size is not None and img.size != target_size:
+            img = img.resize(target_size, PIL_INTERPOLATION_METHOD)
+        return img
 
     def get_basic_photo_features(self, photo_id):
         self.logger.debug(
@@ -360,7 +357,7 @@ class FlickrFeatureExtraction:
         with open(path) as f:
             return json.load(f)
 
-    def _persist_photo_features(self, photo, photo_features_dir):
+    def persist_photo_features(self, photo, photo_features_dir, save_img=False):
         photo_id = photo.get('id')
 
         photo_features_filepath = os.path.join(
@@ -383,18 +380,24 @@ class FlickrFeatureExtraction:
             img = self.process_image(img)
             photo_features['width_downloaded'] = str(img.width)
             photo_features['height_downloaded'] = str(img.height)
-            img.save(image_path)
-            self.logger.debug(f"Photo {photo_id} downloaded to {image_path}")
-            img.close()
 
-            # Model scores
+            if save_img:
+                img.save(image_path)
+                self.logger.debug(f"Photo {photo_id} downloaded to {image_path}")
+            else:
+                self.logger.debug(f"Photo {photo_id} downloaded")
+
+            # Models scores
             self.logger.debug(f"Scoring photo {photo_id}...")
             for name, scorer in self.photo_scorers.items():
-                photo_features[name + '_score'] = str(scorer.score(image_path))
+                score = scorer.score(img)
+                photo_features[name + '_score'] = str(score)
+            img.close()
             self.logger.debug(f"Photo {photo_id} scored.")
 
-            os.remove(image_path)
-            self.logger.debug(f"Photo {photo_id} removed from {image_path}")
+            if save_img:
+                os.remove(image_path)
+                self.logger.debug(f"Photo {photo_id} removed from {image_path}")
 
             self.persist_features(photo_features, photo_features_filepath)
             self.logger.debug(f"Features for photo {photo_id} registered")
@@ -409,7 +412,7 @@ class FlickrFeatureExtraction:
         per_page=500,
         add=False
     ):
-        left_requested = sample_size or self.photo_sample_size
+        n_left_requested = sample_size or self.photo_sample_size
         if not add:
             photo_features_dir = os.path.join(
                 self.output_path, 'user_features', user_id, 'photo_features')
@@ -418,10 +421,10 @@ class FlickrFeatureExtraction:
                 for p in os.listdir(photo_features_dir)
                 if p.endswith('.json')
             }
-            left_requested -= len(already_sampled_photos)
+            n_left_requested -= len(already_sampled_photos)
 
         self.logger.debug(
-            f"We proceed to the selection of {left_requested} photos...")
+            f"We proceed to the selection of {n_left_requested} photos...")
 
         rsp = self._insistent_call(
             self.flickr.photos.search,
@@ -435,12 +438,12 @@ class FlickrFeatureExtraction:
 
         left_indexes = list(range(total_photos))
         random.seed(user_id)  # Reproducibility for faster error recovery
-        while left_requested > 0:
+        while n_left_requested > 0:
             if not left_indexes:
                 self.logger.warning(
                     (f"No more available photos for user {user_id}"))
                 break
-            photo_indexes = _sample_or_get_all(left_indexes, left_requested)
+            photo_indexes = _sample_or_get_all(left_indexes, n_left_requested)
             photo_indexes.sort()
 
             old_page = 0
@@ -473,16 +476,16 @@ class FlickrFeatureExtraction:
                 except IndexError:
                     self.logger.warning(
                         (f"Photo {i+1} couldn't be selected. "
-                         f"Probably deleted or private by user {user_id}"))
+                         f"Probably deleted by user {user_id}"))
                 else:
                     if add or photo.get('id') not in already_sampled_photos:
-                        left_requested -= 1
+                        n_left_requested -= 1
                         yield photo
 
             left_indexes = [i for i in left_indexes if i not in photo_indexes]
-            if left_requested > 0:
+            if n_left_requested > 0:
                 self.logger.debug(
-                    f"Reselecting photos to obtain the remaining {left_requested}...")
+                    f"Reselecting photos to obtain the remaining {n_left_requested}...")
 
     def full_persist_user_and_photo_sample_features(
         self, user_id,
@@ -491,6 +494,11 @@ class FlickrFeatureExtraction:
         add=False
     ):
         """Persist on disk the features of a user and of a sample of its photos.
+
+        Returns two boolean values. The first one indicates whether the user was
+        processed successfully. The second one is always True if the first one
+        is, and False if the user has not been processed for not having all the
+        required features.
         """
         user_features_dir = os.path.join(
             self.output_path, 'user_features', user_id)
@@ -533,7 +541,7 @@ class FlickrFeatureExtraction:
         error_count_before = self.tracker.get_counter('error')
         for photo in photos:
             try:
-                self._persist_photo_features(photo, photo_features_dir)
+                self.persist_photo_features(photo, photo_features_dir)
             except KeyboardInterrupt:
                 raise
             except:

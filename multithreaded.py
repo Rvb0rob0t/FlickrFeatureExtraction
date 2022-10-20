@@ -65,7 +65,6 @@ class FlickrFeatureExtractionMultithreaded():
                 task_name, func, args, kwargs = self.pending_tasks.get()
                 has_exception = False
                 retvalues = None
-                s1 = tracemalloc.take_snapshot()
                 try:
                     retvalues = func(self.ffe, *args, **kwargs)
                 except KeyboardInterrupt:
@@ -82,16 +81,6 @@ class FlickrFeatureExtractionMultithreaded():
                     self.logger.debug(
                         (f"Thread {self.name} finished with task "
                          f"'{task_name}': {func.__name__}({args}, {kwargs})"))
-                    if retvalues[1]:
-                        s2 = tracemalloc.take_snapshot()
-                        self.logger.debug(
-                            f"{gc.collect()} unreachable objects from garbage collector")
-                        top_stats = s2.compare_to(s1, "lineno")[:10]
-                        print('Snapshot comparation for task',
-                              task_name, file=sys.stderr)
-                        for s in top_stats:
-                            print(s, file=sys.stderr)
-                        print('\n\n\n', file=sys.stderr)
                 finally:
                     self.finished_tasks.put(
                         (task_name, has_exception, retvalues))
@@ -134,6 +123,18 @@ class FlickrFeatureExtractionMultithreaded():
         self.pending_tasks.join()
 
 
+def persist_progress(progress_df):
+    if os.path.exists(AUX_METADATA_PATH):
+        df_aux = pd.read_csv(
+            AUX_METADATA_PATH,
+            header=None,
+            names=[progress_df.index.name] + progress_df.columns.tolist(),
+            index_col=progress_df.index.name)
+        progress_df.loc[df_aux.index] = df_aux
+        progress_df.to_csv(input_path)
+        os.remove(AUX_METADATA_PATH)
+
+
 if __name__ == "__main__":
     tracemalloc.start()
 
@@ -160,6 +161,7 @@ if __name__ == "__main__":
     config_parser.read(args.ffe_config_filepath)
     input_path = config_parser['IO']['input_path']
     df = pd.read_csv(input_path, index_col='user')
+    persist_progress(df)
     users_left = df.query(
         'completed==False and has_occupation!=False and deleted!=True').index
 
@@ -191,11 +193,4 @@ if __name__ == "__main__":
     else:
         logging.info("Extraction finished!!!!!!!!!! Oleee!")
     finally:
-        df_aux = pd.read_csv(
-            AUX_METADATA_PATH,
-            header=None,
-            names=[df.index.name] + df.columns.tolist(),
-            index_col='user')
-        df.loc[df_aux.index] = df_aux
-        df.to_csv(input_path)
-        os.remove(AUX_METADATA_PATH)
+        persist_progress(df)

@@ -47,8 +47,10 @@ class ShuKongAestheticScorer:
         self.transformer.set_mean(INPUT_LAYER, mean_array)
         self.transformer.set_transpose(INPUT_LAYER, (2,0,1))
 
-    def score(self, image_path):
-        img = cv2.imread(image_path, cv2.IMREAD_COLOR)
+    def score(self, pil_img):
+        """Scores image in PIL format.
+        """
+        img = cv2.cvtColor(np.asarray(pil_img), cv2.COLOR_RGB2BGR)
         img = transform_img(img)
 
         self.net.blobs[INPUT_LAYER].data[...] = self.transformer.preprocess(INPUT_LAYER, img)
@@ -56,6 +58,10 @@ class ShuKongAestheticScorer:
         return out['fc11_score'][0][0]
 
 if __name__ == "__main__":
+    from PIL import Image
+
     kongaesthetics = ShuKongAestheticScorer()
-    score = kongaesthetics.score("/home/ruben/Photography_Capabilities_Case_Study/NIMA/idealo/image-quality-assessment/readme_figures/images_aesthetic/aesthetic1.jpg")
+    p = "/home/ruben/Photography_Capabilities_Case_Study/NIMA/idealo/image-quality-assessment/readme_figures/images_aesthetic/aesthetic1.jpg"
+    with Image.open(p) as img:
+        score = kongaesthetics.score(img)
     print(f"Image scored with {score}")
