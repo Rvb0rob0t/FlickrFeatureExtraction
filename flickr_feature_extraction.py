@@ -395,10 +395,6 @@ class FlickrFeatureExtraction:
             img.close()
             self.logger.debug(f"Photo {photo_id} scored.")
 
-            if save_img:
-                os.remove(image_path)
-                self.logger.debug(f"Photo {photo_id} removed from {image_path}")
-
             self.persist_features(photo_features, photo_features_filepath)
             self.logger.debug(f"Features for photo {photo_id} registered")
             self.tracker.increment('photos_registered')

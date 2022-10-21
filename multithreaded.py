@@ -26,7 +26,7 @@ from shukong_aesthetics import shukong_aesthetics
 AUX_METADATA_PATH = '.metadata_updates.csv'
 
 
-class ThreadSafeScorerAdapter():
+class ThreadSafeScorerDecorator():
 
     def __init__(self, scorer, name=None):
         self.lock = threading.Lock()
@@ -92,14 +92,14 @@ class FlickrFeatureExtractionMultithreaded():
         self.finished_tasks = queue.SimpleQueue()
         self.logger = logging.getLogger(__name__)
         photo_scorers = {
-            'kong': ThreadSafeScorerAdapter(
+            'kong': ThreadSafeScorerDecorator(
                 shukong_aesthetics.ShuKongAestheticScorer(), name='ShuKong'),
-            'nima': ThreadSafeScorerAdapter(
+            'nima': ThreadSafeScorerDecorator(
                 nima.NimaScorer(tech=False), name='NimaAesthetic'),
-            'nima_tech': ThreadSafeScorerAdapter(
+            'nima_tech': ThreadSafeScorerDecorator(
                 nima.NimaScorer(tech=True), name='NimaTechnical')
         }
-        tracker = tracking.ThreadSafeAdapter(tracking.Tracker())
+        tracker = tracking.ThreadSafeDecorator(tracking.Tracker())
 
         for p in secrets_filepaths:
             ffe = FlickrFeatureExtraction(

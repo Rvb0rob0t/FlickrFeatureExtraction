@@ -62,7 +62,7 @@ class Tracker:
             self.last_counters = self.counters.copy()
 
 
-class ThreadSafeAdapter():
+class ThreadSafeDecorator():
 
     def __init__(self, tracker: Tracker):
         self.lock = threading.Lock()
