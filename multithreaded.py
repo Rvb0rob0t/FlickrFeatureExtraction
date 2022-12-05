@@ -1,10 +1,8 @@
 import argparse
 import configparser
-import gc
 import logging
 import os
 import queue
-import sys
 import threading
 import tracemalloc
 
@@ -31,20 +29,19 @@ class ThreadSafeScorerDecorator():
     def __init__(self, scorer, name=None):
         self.lock = threading.Lock()
         self.scorer = scorer
-        if name is None:
-            self.scorer_name = self.scorer.__class__.__name__
-        else:
-            self.scorer_name = name
+        self.scorer_name = name or self.scorer.__class__.__name__
 
-    def score(self, image_path):
-        # logging.debug(
-        #     f"Thread {threading.current_thread().name} acquiring {self.scorer_name} lock...")
+    def score(self, pil_img):
+        logging.debug(
+            f"Thread {threading.current_thread().name} acquiring {self.scorer_name} lock...")
         self.lock.acquire()
-        # logging.debug(
-        #     f"{self.scorer_name} lock acquired by thread {threading.current_thread().name}")
-        score = self.scorer.score(image_path)
-        # logging.debug(
-        #     f"{self.scorer_name} lock released by thread {threading.current_thread().name}")
+
+        logging.debug(
+            f"{self.scorer_name} lock acquired by thread {threading.current_thread().name}")
+        score = self.scorer.score(pil_img)
+
+        logging.debug(
+            f"{self.scorer_name} lock released by thread {threading.current_thread().name}")
         self.lock.release()
         return score
 

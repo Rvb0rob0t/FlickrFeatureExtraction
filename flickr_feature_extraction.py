@@ -3,7 +3,6 @@
 
 import argparse
 import configparser
-import csv
 import io
 import json
 import logging
@@ -53,7 +52,7 @@ class FlickrFeatureExtraction:
 
     session = requests.Session()
 
-    def __init__(self, config_filepath, key_environment_filepath=None,
+    def __init__(self, config_filepath, key_environment_filepath,
                  photo_scorers=None, tracker=None):
         self.logger = logging.getLogger(__name__)
 
@@ -625,9 +624,21 @@ if __name__ == "__main__":
         args.log_config_filepath,
         disable_existing_loggers=True)  # Only for debugging
 
-    ffe = FlickrFeatureExtraction(args.ffe_config_filepath)
-    with open(ffe.input_path, mode='r') as f:
-        reader = csv.DictReader(f)
-        for row in reader:
-            user_id = row.get('user')
-            ffe.full_persist_user_and_photo_sample_features(user_id)
+    ffe = FlickrFeatureExtraction(args.ffe_config_filepath, 'original.env')
+    # with open(ffe.input_path, mode='r') as f:
+    #     reader = csv.DictReader(f)
+    #     for row in reader:
+    #         user_id = row.get('user')
+    #         ffe.full_persist_user_and_photo_sample_features(user_id)
+
+    from datetime import datetime as dt
+    min_upload_date = dt.timestamp(dt(year=2021, month=12, day=1))
+    max_upload_date = dt.timestamp(dt(year=2022, month=1, day=1))
+
+    activity = ffe.get_activity_stats(
+        min_upload_date, max_upload_date)
+
+    import pandas as pd
+    activity_pathname = os.path.join(
+        ffe.output_path, 'activity.csv')
+    pd.Series(activity).to_csv(activity_pathname)
